@@ -1,0 +1,8 @@
+study	disease	bioproject	layout	region	fwd_primer	rev_primer	trunc_f	trunc_r	batch_mode	batch2_trunc_f	batch2_trunc_r	rc_rep_seqs	notes
+Ziganshina_2020	GERD	PRJNA598080	PE	V3-V4	CCTACGGGNGGCWGCAG	GACTACHVGGGTATCTAATCC	230	220	none	NA	NA	0	primers verified from bash_history line 623
+Qian_2023	GERD	PRJNA894717	PE	V3-V4	CCTAYGGGRBGCASCAG	GGACTACHVGGGTWTCTAAT	227	223	none	NA	NA	0	initial 249/249 failed; 227/223 succeeded
+Hao_2022	GERD	PRJNA824804	SE	V3-V4	GGAGGCAGCAGTRRGGAAT		400		none	NA	NA	1	Roche LS454 GS FLX Titanium; primers pre-trimmed at submission (cutadapt 0% match); rep-seqs RC'd before PICRUSt2 only
+Kawar_2021	GERD	PRJNA674379	SE	V1-V3			220		none	NA	NA	1	Illumina MiSeq reverse-direction reads; 519R and 27F absent from 1500-read sample; cutadapt skipped; rep-seqs RC'd before PICRUSt2 only; paper used trunc 258, we use 220 (deliberate)
+Zheng_2024	LPRD	PRJNA996485	PE	V3-V4	CCTACGGRRBGCASCAGKVRVGAAT	GGACTACNVGGGTWTCTAATCC	219	224	split	212	220	0	two seq batches merged; LPRD_8W excluded
+Li_2025	IBS-D	PRJNA1118066	PE	V3-V4	ACTCCTACGGGAGGCAGCAG	GGACTACHVGGGTWTCTAAT	270	270	none	NA	NA	0	initial 272/271 dropped 10/35 samples; 270/270 succeeded
+Tang_2023	IBS-D	PRJNA873889	PE	V4-V5	GTGCCAGCMGCCGCGGTAA	CCGTCAATTCMTTTGAGTTT	274	245	split	224	222	0	two seq batches merged; tongue-coating samples only

@@ -1,241 +1,89 @@
-#!/bin/bash
-# Download raw 16S FASTQ for the oral microbiota / DGBI systematic review.
-# Pipeline per run: prefetch (.sra) -> fasterq-dump (FASTQ) -> gzip.
+#!/usr/bin/env bash
+# ---------------------------------------------------------------------------
+# download.sh — fetch raw 16S FASTQs for the 7 included studies
 #
-# Requires SRA Toolkit >= 3.0 (prefetch, fasterq-dump) and Entrez Direct
-# (esearch/efetch) to resolve SRR accessions from BioProject / DRA IDs.
-# pigz is used for compression if available, otherwise gzip.
+# Reproduces the SRA-pull loop actually used to populate ~/sra_downloads/.
+# Source of the loop body: bash_history line 654-655 (single inline run).
 #
-# Usage: set OUTPUT_DIR below, then  chmod +x download_sra.sh && ./download_sra.sh
+# Each study is downloaded into its own subdirectory of $OUT_ROOT. For every
+# run accession we:
+#   1. prefetch the SRA blob (max-size 50G to allow large lanes)
+#   2. fasterq-dump --split-3 (writes _1/_2 for PE, .fastq for SE)
+#   3. gzip the FASTQs
+#   4. remove the SRA blob to save disk
+#
+# Requires SRA Toolkit (>= 3.x; we used 3.4.1 — installed from
+# https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/current/sratoolkit.current-ubuntu64.tar.gz)
+# and EDirect (esearch, efetch) for run-list resolution.
+# ---------------------------------------------------------------------------
 
 set -euo pipefail
 
-# ======================== USER SETTINGS ========================
-OUTPUT_DIR="./sra_downloads"       # <-- Change this to your desired path
-THREADS=6                          # Number of threads for fasterq-dump
-TEMP_DIR="./sra_tmp"               # Temporary directory for fasterq-dump
-# ===============================================================
+OUT_ROOT="${OUT_ROOT:-$HOME/sra_downloads}"
+THREADS="${THREADS:-4}"
+MAX_SRA_SIZE="${MAX_SRA_SIZE:-50G}"
 
-mkdir -p "$OUTPUT_DIR" "$TEMP_DIR"
-
-# Log file
-LOG_FILE="${OUTPUT_DIR}/download_log_$(date +%Y%m%d_%H%M%S).txt"
-exec > >(tee -a "$LOG_FILE") 2>&1
-
-echo "========================================"
-echo "SRA Download Script - Oral Microbiota SR"
-echo "Started: $(date)"
-echo "Output:  $OUTPUT_DIR"
-echo "Threads: $THREADS"
-echo "========================================"
-
-###############################################################################
-# STEP 1: Define BioProject accessions
-###############################################################################
-
-# NCBI SRA BioProjects
-declare -A NCBI_PROJECTS
-NCBI_PROJECTS=(
-    ["Hao_2022_GERD"]="PRJNA824804"
-    # NOTE: PRJNA46307 (Hao 2022) is the HMP project with thousands of runs.
-    # The paper likely reused public HMP data as controls. You may want to
-    # skip this or download only specific samples. Uncomment if needed:
-    # ["Hao_2022_HMP_controls"]="PRJNA46307"
-    ["Kawar_2021_GERD"]="PRJNA674379"
-    ["Ziganshina_2020_GERD"]="PRJNA598080"
-    ["Qian_2023_GERD"]="PRJNA894717"
-    ["Zheng_2024_LPRD"]="PRJNA996485"
-    ["Tang_2023_IBS"]="PRJNA873889"
-    ["Li_2025_IBS"]="PRJNA1118066"
-    ["Kwiatkowska_2024_FC"]="PRJNA925675"
+# BioProject : local-directory-name. Order matches the original pull.
+STUDIES=(
+  "PRJNA598080:Ziganshina_2020_GERD"   # PE V3-V4, 26 samples
+  "PRJNA824804:Hao_2022_GERD"          # SE V3-V4, 48 samples (uncompressed .fastq)
+  "PRJNA674379:Kawar_2021_GERD"        # SE V1-V3, 128 samples (uncompressed .fastq)
+  "PRJNA894717:Qian_2023_GERD"         # PE V3-V4, 60 samples
+  "PRJNA996485:Zheng_2024_LPRD"        # PE V3-V4, 252 samples (two seq batches)
+  "PRJNA873889:Tang_2023_IBS"          # PE V4-V5, 124 samples (two seq batches)
+  "PRJNA1118066:Li_2025_IBS"           # PE V3-V4, 35 samples
 )
 
-# DDBJ DRA accessions (synced to NCBI, so SRA Toolkit can access them)
-declare -A DDBJ_PROJECTS
-DDBJ_PROJECTS=(
-    ["Tanaka_2022_IBS"]="DRA013075"
-    ["Kim_2023_FD"]="DRA015691"
-)
-
-###############################################################################
-# STEP 2: Function to get SRR accessions from BioProject
-###############################################################################
-
-get_srr_from_bioproject() {
-    local project_id="$1"
-    local study_name="$2"
-    local srr_file="${OUTPUT_DIR}/${study_name}_SRR_list.txt"
-
-    echo ""
-    echo "--- Fetching SRR accessions for ${study_name} (${project_id}) ---"
-
-    # Use EDirect to get run accessions
-    esearch -db sra -query "${project_id}[BioProject]" | \
-        efetch -format runinfo | \
-        grep -v "^Run" | \
-        cut -d',' -f1 | \
-        grep -v "^$" > "$srr_file"
-
-    local count=$(wc -l < "$srr_file")
-    echo "  Found ${count} runs, saved to ${srr_file}"
-    echo "$srr_file"
-}
-
-###############################################################################
-# STEP 3: Function to get SRR accessions from DDBJ DRA
-###############################################################################
-
-get_srr_from_dra() {
-    local dra_id="$1"
-    local study_name="$2"
-    local srr_file="${OUTPUT_DIR}/${study_name}_SRR_list.txt"
-
-    echo ""
-    echo "--- Fetching SRR accessions for ${study_name} (${dra_id}) ---"
-
-    # DDBJ DRA data is mirrored to NCBI, so we can search by DRA accession
-    esearch -db sra -query "${dra_id}" | \
-        efetch -format runinfo | \
-        grep -v "^Run" | \
-        cut -d',' -f1 | \
-        grep -v "^$" > "$srr_file"
-
-    # If no results via DRA ID, try alternative search
-    if [ ! -s "$srr_file" ]; then
-        echo "  Direct DRA search returned 0 results. Trying alternative..."
-        esearch -db sra -query "${dra_id}[Accession]" | \
-            efetch -format runinfo | \
-            grep -v "^Run" | \
-            cut -d',' -f1 | \
-            grep -v "^$" > "$srr_file"
-    fi
-
-    local count=$(wc -l < "$srr_file")
-    echo "  Found ${count} runs, saved to ${srr_file}"
-    echo "$srr_file"
-}
-
-###############################################################################
-# STEP 4: Function to download and convert one SRR accession
-###############################################################################
-
-download_and_convert() {
-    local srr_id="$1"
-    local study_dir="$2"
-
-    echo "  [prefetch]     ${srr_id} ..."
-    prefetch "$srr_id" --output-directory "$study_dir" --max-size 50G
-
-    echo "  [fasterq-dump] ${srr_id} to FASTQ ..."
-    fasterq-dump "$srr_id" \
-        --split-3 \
-        --outdir "$study_dir" \
-        --temp "$TEMP_DIR" \
-        --threads "$THREADS"
-
-    echo "  [gzip]         Compressing FASTQ files ..."
-    # Use pigz if available (parallel gzip), otherwise gzip
-    if command -v pigz &> /dev/null; then
-        pigz -p "$THREADS" "${study_dir}/${srr_id}"*.fastq 2>/dev/null || true
-    else
-        gzip "${study_dir}/${srr_id}"*.fastq 2>/dev/null || true
-    fi
-
-    # Clean up .sra file to save space
-    rm -rf "${study_dir}/${srr_id}" 2>/dev/null || true
-
-    echo "  [done]         ${srr_id}"
-}
-
-###############################################################################
-# STEP 5: Main download loop — NCBI projects
-###############################################################################
-
-echo ""
-echo "========================================"
-echo "Processing NCBI SRA BioProjects..."
-echo "========================================"
-
-for study_name in "${!NCBI_PROJECTS[@]}"; do
-    project_id="${NCBI_PROJECTS[$study_name]}"
-    study_dir="${OUTPUT_DIR}/${study_name}"
-    mkdir -p "$study_dir"
-
-    srr_file=$(get_srr_from_bioproject "$project_id" "$study_name")
-
-    if [ ! -s "$srr_file" ]; then
-        echo "  WARNING: No SRR accessions found for ${study_name}. Skipping."
-        continue
-    fi
-
-    echo "  Downloading runs for ${study_name}..."
-    while IFS= read -r srr_id; do
-        [ -z "$srr_id" ] && continue
-        # Skip if already downloaded
-        if ls "${study_dir}/${srr_id}"*.fastq.gz 1>/dev/null 2>&1; then
-            echo "  [skip] ${srr_id} already exists"
-            continue
-        fi
-        download_and_convert "$srr_id" "$study_dir"
-    done < "$srr_file"
-
-    echo "=== ${study_name} complete ==="
+# --- preflight ---------------------------------------------------------------
+for tool in prefetch fasterq-dump esearch efetch gzip; do
+  if ! command -v "$tool" >/dev/null 2>&1; then
+    echo "ERROR: required tool not on PATH: $tool" >&2
+    exit 1
+  fi
 done
 
-###############################################################################
-# STEP 6: Main download loop — DDBJ projects
-###############################################################################
+mkdir -p "$OUT_ROOT"
 
-echo ""
-echo "========================================"
-echo "Processing DDBJ DRA projects..."
-echo "========================================"
+download_run() {
+  local srr="$1"
+  echo "  $(date +%F_%T)  $srr"
+  prefetch "$srr" --max-size "$MAX_SRA_SIZE"
+  fasterq-dump "$srr" --split-3 --threads "$THREADS"
+  rm -rf "$srr"
+  # gzip whatever fasterq-dump produced (paired -> _1/_2, single -> .fastq)
+  if [[ -f "${srr}_1.fastq" ]]; then
+    gzip "${srr}_1.fastq" "${srr}_2.fastq"
+  elif [[ -f "${srr}.fastq" ]]; then
+    # NOTE: Hao 2022 and Kawar 2021 were kept uncompressed in the original run
+    # (QIIME2 accepts both). Comment out the next line if you want to match
+    # the original layout exactly.
+    gzip "${srr}.fastq"
+  else
+    echo "  WARNING: no FASTQ output found for $srr" >&2
+  fi
+}
 
-for study_name in "${!DDBJ_PROJECTS[@]}"; do
-    dra_id="${DDBJ_PROJECTS[$study_name]}"
-    study_dir="${OUTPUT_DIR}/${study_name}"
-    mkdir -p "$study_dir"
+# --- main loop ---------------------------------------------------------------
+for entry in "${STUDIES[@]}"; do
+  prj="${entry%%:*}"
+  name="${entry##*:}"
+  dir="$OUT_ROOT/$name"
+  mkdir -p "$dir"
+  cd "$dir"
 
-    srr_file=$(get_srr_from_dra "$dra_id" "$study_name")
+  echo "=== $(date +%F_%T) START $name ($prj) ==="
 
-    if [ ! -s "$srr_file" ]; then
-        echo "  WARNING: No runs found for ${study_name} (${dra_id})."
-        echo "  You may need to download manually from DDBJ:"
-        echo "    https://ddbj.nig.ac.jp/resource/sra-submission/${dra_id}"
-        continue
-    fi
+  # Resolve run accessions from SRA for this BioProject.
+  esearch -db sra -query "${prj}[BioProject]" \
+    | efetch -format runinfo \
+    | cut -d',' -f1 \
+    | grep -v "^Run" \
+    | grep -v "^$" \
+    | while read -r srr; do
+        download_run "$srr"
+      done
 
-    echo "  Downloading runs for ${study_name}..."
-    while IFS= read -r srr_id; do
-        [ -z "$srr_id" ] && continue
-        if ls "${study_dir}/${srr_id}"*.fastq.gz 1>/dev/null 2>&1; then
-            echo "  [skip] ${srr_id} already exists"
-            continue
-        fi
-        download_and_convert "$srr_id" "$study_dir"
-    done < "$srr_file"
-
-    echo "=== ${study_name} complete ==="
+  echo "=== $(date +%F_%T) END   $name ==="
 done
 
-###############################################################################
-# STEP 7: Summary
-###############################################################################
-
-echo ""
-echo "========================================"
-echo "Download Summary"
-echo "========================================"
-echo "Completed: $(date)"
-echo ""
-echo "Files per study:"
-for dir in "${OUTPUT_DIR}"/*/; do
-    if [ -d "$dir" ]; then
-        study=$(basename "$dir")
-        fq_count=$(ls "$dir"/*.fastq.gz 2>/dev/null | wc -l || echo 0)
-        echo "  ${study}: ${fq_count} FASTQ files"
-    fi
-done
-echo ""
-echo "Log saved to: ${LOG_FILE}"
-echo "========================================"
+echo "All downloads complete. Raw FASTQ under: $OUT_ROOT"
