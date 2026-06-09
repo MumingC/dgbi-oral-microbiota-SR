@@ -4,14 +4,25 @@ title: "Analysis code for: Oral microbiota in disorders of gut-brain interaction
 type: software
 authors:
   - family-names: Chien
-    given-names: Muming
+    given-names: Mu-Ming
     email: muming.chien@gmail.com
-    # affiliation: University of Nottingham
-# TODO: add co-authors (e.g., Emily, Nick) with names/ORCIDs before publication
+    affiliation: "Taipei Medical University Hospital, Taipei, Taiwan"
+  - family-names: Egboh
+    given-names: Stella-Maris
+    affiliation: "The University of Newcastle, Callaghan, NSW, Australia"
+  - family-names: Duncanson
+    given-names: Kerith
+    affiliation: "The University of Newcastle, Callaghan, NSW, Australia"
+  - family-names: Talley
+    given-names: Nicholas J.
+    affiliation: "The University of Newcastle, Callaghan, NSW, Australia"
+  - family-names: Hoedt
+    given-names: Emily C.
+    affiliation: "The University of Newcastle, Callaghan, NSW, Australia"
 license: MIT
 version: "1.0.0"
 date-released: "2026-06-05"
-# repository-code: "https://github.com/<your-username>/dgbi-oral-microbiota-SR"
+repository-code: "https://github.com/MumingC/dgbi-oral-microbiota-SR"
 # doi: "10.5281/zenodo.XXXXXXX"   # add after minting via Zenodo
 keywords:
   - oral microbiota
