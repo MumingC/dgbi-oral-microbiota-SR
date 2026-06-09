@@ -1,0 +1,15 @@
+ko_id	gene	description	pathway_branch
+K02361	menF	isochorismate synthase (MenF)	classical
+K02552	menD	SEPHCHC synthase (MenD)	classical
+K02549	menH	SHCHC synthase (MenH)	classical
+K02551	menC	o-succinylbenzoate synthase (MenC)	classical
+K01911	menE	o-succinylbenzoate--CoA ligase (MenE)	classical
+K01661	menB	1,4-dihydroxy-2-naphthoyl-CoA synthase (MenB)	classical
+K19222	menI	1,4-dihydroxy-2-naphthoyl-CoA hydrolase (MenI)	classical
+K02548	menA	1,4-dihydroxy-2-naphthoate polyprenyltransferase (MenA)	classical
+K03183	menG/ubiE	demethylmenaquinone methyltransferase (MenG/UbiE)	classical
+K11782	mqnA	chorismate dehydratase (MqnA)	futalosine
+K11783	mqnB	futalosine hydrolase (MqnB)	futalosine
+K11784	mqnC	cyclic dehypoxanthinyl futalosine synthase (MqnC)	futalosine
+K11785	mqnD	1,4-dihydroxy-6-naphthoate synthase (MqnD)	futalosine
+K08680	mqnE	aminofutalosine synthase (MqnE)	futalosine

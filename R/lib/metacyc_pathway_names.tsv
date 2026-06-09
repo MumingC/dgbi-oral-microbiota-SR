@@ -1,0 +1,31 @@
+pathway_id	description
+ALL-CHORISMATE-PWY	superpathway of chorismate metabolism
+ARGORNPROST-PWY	arginine, ornithine and proline interconversion
+FAO-PWY	fatty acid β-oxidation I
+LACTOSECAT-PWY	lactose and galactose degradation I
+NAGLIPASYN-PWY	N-acetylglucosamine–lipid A precursor biosynthesis
+POLYISOPRENSYN-PWY	polyisoprenoid biosynthesis (E. coli)
+PWY-1269	CMP-3-deoxy-D-manno-octulosonate (KDO) biosynthesis
+PWY-4984	urea cycle
+PWY-5022	4-aminobutanoate (GABA) degradation V
+PWY-5845	superpathway of menaquinol-9 biosynthesis
+PWY-5850	superpathway of menaquinol-6 biosynthesis I
+PWY-5860	superpathway of demethylmenaquinol-6 biosynthesis I
+PWY-5862	superpathway of demethylmenaquinol-9 biosynthesis
+PWY-5896	superpathway of menaquinol-10 biosynthesis
+PWY-5910	superpathway of geranylgeranyl diphosphate biosynthesis I (via mevalonate)
+PWY-6467	Kdo transfer to lipid IVA (Chlamydia)
+PWY-6471	peptidoglycan biosynthesis IV (Enterococcus faecium)
+PWY-7234	inosine-5'-phosphate biosynthesis III
+PWY-7539	6-hydroxymethyl-dihydropterin diphosphate biosynthesis III (Chlamydia)
+PWY-922	mevalonate pathway I
+PYRIDNUCSYN-PWY	NAD biosynthesis I (from aspartate)
+FUC-RHAMCAT-PWY	superpathway of fucose and rhamnose degradation
+P281-PWY	3-phenylpropanoate and 3-(3-hydroxyphenyl)propanoate degradation
+PANTO-PWY	phosphopantothenate biosynthesis I
+PENTOSE-P-PWY	pentose phosphate pathway
+PWY-2941	L-lysine biosynthesis II
+PWY-5677	succinate fermentation to butanoate
+PWY-7111	pyruvate fermentation to isobutanol (engineered)
+PWY0-1261	peptidoglycan recycling I
+TYRFUMCAT-PWY	L-tyrosine degradation I

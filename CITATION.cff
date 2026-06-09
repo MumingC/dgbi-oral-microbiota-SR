@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite both the software (via this file) and the associated article."
+title: "Analysis code for: Oral microbiota in disorders of gut-brain interaction (DGBI) — a systematic review and re-analysis"
+type: software
+authors:
+  - family-names: Chien
+    given-names: Muming
+    email: muming.chien@gmail.com
+    # affiliation: University of Nottingham
+# TODO: add co-authors (e.g., Emily, Nick) with names/ORCIDs before publication
+license: MIT
+version: "1.0.0"
+date-released: "2026-06-05"
+# repository-code: "https://github.com/<your-username>/dgbi-oral-microbiota-SR"
+# doi: "10.5281/zenodo.XXXXXXX"   # add after minting via Zenodo
+keywords:
+  - oral microbiota
+  - disorders of gut-brain interaction
+  - DGBI
+  - GERD
+  - irritable bowel syndrome
+  - 16S rRNA
+  - systematic review
+  - meta-analysis

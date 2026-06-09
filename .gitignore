@@ -1,0 +1,40 @@
+# ---- Personal / environment (never commit) ----
+.Rhistory
+.Rapp.history
+.RData
+.Rproj.user/
+*.Rproj
+.Renviron
+.DS_Store
+Thumbs.db
+
+# ---- Raw & intermediate data (regenerable or too large) ----
+# Raw FASTQ / SRA downloads — fetch via download_sra.sh
+sra_downloads/
+sra_tmp/
+*.fastq
+*.fastq.gz
+*.sra
+
+# Cached phyloseq object (regenerate with R/scripts/01_build_phyloseq.R)
+cache/
+*.rds
+
+# MaAsLin2 heavy intermediates (regenerable; only summary tables are tracked)
+**/features/
+**/fits/
+**/maaslin2.log
+*.log
+
+# Figures (regenerate from scripts)
+figures/
+
+# QIIME2 artifacts
+*.qza
+*.qzv
+
+# ---- OS / editor ----
+*~
+*.tmp
+.idea/
+.vscode/
